@@ -1,0 +1,102 @@
+#include <Servo.h>
+
+Servo scanServo;
+
+// Pins
+const int trigPin = 9;
+const int echoPin = 10;
+const int servoPin = 6;
+
+const int motor1A = 2;
+const int motor1B = 3;
+const int motor2A = 4;
+const int motor2B = 5;
+
+// Distance thresholds
+const int safeDistance = 20;
+
+void setup() {
+  scanServo.attach(servoPin);
+  pinMode(trigPin, OUTPUT);
+  pinMode(echoPin, INPUT);
+  pinMode(motor1A, OUTPUT);
+  pinMode(motor1B, OUTPUT);
+  pinMode(motor2A, OUTPUT);
+  pinMode(motor2B, OUTPUT);
+  Serial.begin(9600);
+}
+
+long getDistance() {
+  digitalWrite(trigPin, LOW); delayMicroseconds(2);
+  digitalWrite(trigPin, HIGH); delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+  long duration = pulseIn(echoPin, HIGH);
+  return duration * 0.034 / 2;
+}
+
+void moveForward() {
+  digitalWrite(motor1A, HIGH);
+  digitalWrite(motor1B, LOW);
+  digitalWrite(motor2A, HIGH);
+  digitalWrite(motor2B, LOW);
+}
+
+void moveBackward() {
+  digitalWrite(motor1A, LOW);
+  digitalWrite(motor1B, HIGH);
+  digitalWrite(motor2A, LOW);
+  digitalWrite(motor2B, HIGH);
+}
+
+void turnRight() {
+  digitalWrite(motor1A, HIGH);
+  digitalWrite(motor1B, LOW);
+  digitalWrite(motor2A, LOW);
+  digitalWrite(motor2B, HIGH);
+}
+
+void turnLeft() {
+  digitalWrite(motor1A, LOW);
+  digitalWrite(motor1B, HIGH);
+  digitalWrite(motor2A, HIGH);
+  digitalWrite(motor2B, LOW);
+}
+
+void stopMotors() {
+  digitalWrite(motor1A, LOW);
+  digitalWrite(motor1B, LOW);
+  digitalWrite(motor2A, LOW);
+  digitalWrite(motor2B, LOW);
+}
+
+void loop() {
+  // Center scan
+  scanServo.write(90);
+  delay(300);
+  long centerDist = getDistance();
+  Serial.print("Center: "); Serial.println(centerDist);
+
+  if (centerDist > safeDistance) {
+    moveForward();
+  } else {
+    stopMotors();
+    delay(200);
+
+    // Scan left
+    scanServo.write(150);
+    delay(300);
+    long leftDist = getDistance();
+    Serial.print("Left: "); Serial.println(leftDist);
+
+    // Scan right
+    scanServo.write(30);
+    delay(300);
+    long rightDist = getDistance();
+    Serial.print("Right: "); Serial.println(rightDist);
+
+    // Decide turn direction
+    if (leftDist > rightDist && leftDist > safeDistance) {
+      turnLeft(); delay(500);
+    } else if (rightDist > leftDist && rightDist > safeDistance) {
+      turnRight(); delay(500);
+    } else
